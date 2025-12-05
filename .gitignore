@@ -1,0 +1,43 @@
+# --- Build artifacts ---
+*.o
+*.lo
+*.la
+*.a
+*.so
+*.dll
+*.dylib
+*.exe
+*.out
+*.obj
+
+# --- Compiled programs ---
+a.out
+*.elf
+
+# --- Build directories ---
+build/
+bin/
+obj/
+dist/
+
+# --- Debug files ---
+*.gch
+*.pch
+*.gcno
+*.gcda
+*.gcov
+
+# --- IDE / Editor files ---
+# VS Code
+.vscode/
+
+# CLion / JetBrains
+.idea/
+
+# Vim
+*.swp
+*.swo
+
+# --- OS-specific ---
+.DS_Store
+Thumbs.db
