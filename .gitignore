@@ -10,6 +10,9 @@
 *.out
 *.obj
 
+*.log
+
+
 # --- Compiled programs ---
 a.out
 *.elf
