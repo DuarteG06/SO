@@ -73,12 +73,15 @@ int main(int argc, char** argv) {
         // TODO receive inputs
     }
 
+
+
     // Random seed for any random movements
     srand((unsigned int)time(NULL));
 
     open_debug_file("debug.log");
 
     terminal_init();
+    
     
     int accumulated_points = 0;
     bool end_game = false;
