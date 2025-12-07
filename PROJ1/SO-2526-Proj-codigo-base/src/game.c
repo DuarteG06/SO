@@ -72,9 +72,10 @@ int play_board(board_t * game_board) {
 }
 
 
-char* read_file(int fd){
+char *read_file(int fd){
     int stride = 128;
     char *buffer = malloc(stride* sizeof(char));
+    if (!buffer) return NULL;
     int buf_free = stride;
     int buf_total = stride;
     int buf_bytes_written =0;
@@ -93,9 +94,7 @@ char* read_file(int fd){
                 }
         }
 
-
-
-        int bytes_read = read(fd, buffer + done, stride);
+        bytes_read = read(fd, buffer + done, stride);
 
         if (bytes_read < 0) {
             perror("read error");
@@ -116,6 +115,7 @@ char* read_file(int fd){
         buf_free -= bytes_read;
         buf_bytes_written += bytes_read;
     }
+    buffer[done] = '\0';
     return buffer;
 }
 
@@ -131,7 +131,6 @@ char **get_lvl_files(char *inputdir, int *count){
         perror("opendir");
         return NULL;
     }
-
     struct dirent *entry;
     int free_size =4;
     int n =0;
@@ -141,7 +140,6 @@ char **get_lvl_files(char *inputdir, int *count){
         closedir(dir);
         return NULL;
     }
-
     while((entry =readdir(dir)) !=NULL){
         if(is_lvl_file(entry->d_name)){
             if(n>=free_size){
@@ -165,15 +163,75 @@ char **get_lvl_files(char *inputdir, int *count){
             }
             n++;
         }
-
-        
     }
     closedir(dir);
     *count = n;
     return files;
 }
 
+void read_lvl_file(int fd, board_t *board){
+    char *start = read_file(fd);
+    char *end;
 
+    while ((end = strchr(start, '\n')) != NULL) {
+        *end = '\0';  
+        
+        if(start[0] != '#'){
+            if(strncmp(start, "DIM ", 4) ==0){
+                char *rest = start + 4;
+                int width, height;
+                sscanf(rest, "%d %d", &width, &height);
+                board->width = width;
+                board->height = height;
+                
+                
+            }else if(strncmp(start, "PAC ", 4) ==0){
+                char *rest = start + 4;
+                int fd = open(rest, O_RDONLY);
+                if (fd < 0) {
+                    perror("open");
+                    return;
+                }
+                read_pac_file(fd, board);
+
+
+
+
+                continue;
+            }else if(strncmp(start, "MON ", 4) ==0){
+                continue;
+            }else if(strncmp(start, "TEMPO ", 6) ==0){
+                char *rest = start + 6;
+                int tempo;
+                sscanf(rest, "%d", &tempo);
+                board->tempo =tempo;
+            }
+            
+            //printf("Line: %s\n", start);
+        }
+        start = end + 1; // move to the next line
+    }
+
+    // Provavelmente n será util
+    if (*start != '\0') {
+        printf("Line: %s\n", start);
+    }
+}
+
+
+void read_pac_file(int fd, board_t *board){
+    char *start = read_file(fd);
+    char *end;
+
+    while ((end = strchr(start, '\n')) != NULL) {
+        *end = '\0';  
+        
+        if(start[0] != '#'){
+            printf("Line: %s\n", start);
+        }
+        start = end + 1; // move to the next line
+    }
+}
 
 
 int main(int argc, char** argv) {
@@ -182,47 +240,19 @@ int main(int argc, char** argv) {
         // TODO receive inputs
     }
     int count;
-
     char **lvl_files = get_lvl_files(argv[1], &count);
     if(lvl_files ==  NULL){
         return 1;
     }
-    for (int i = 0; i < count; i++) {
-        printf("%s\n", lvl_files[i]);
-        free(lvl_files[i]); // free individual strings
+    char path[128];
+    snprintf(path, sizeof(path), "%s/%s", argv[1], lvl_files[0]);
+
+    int fd = open(path, O_RDONLY);
+    if (fd < 0) {
+        perror("open");
+        return 1;
     }
-    free(lvl_files);
     
-
-    
-
-
-    /* 
-    int fd = open(argv[1], O_RDONLY);
-
-    char *buffer = read_file(fd);
-    */
-    
-
-
-    /*
-    char *start = buffer;
-    char *end;
-
-    while ((end = strchr(start, '\n')) != NULL) {
-        *end = '\0'; // temporarily terminate the line
-        // Apply your code to the line here
-        printf("Line: %s\n", start);
-
-        start = end + 1; // move to next line
-    }
-
-    // Handle last line (if file does not end with newline)
-    if (*start != '\0') {
-        printf("Line: %s\n", start);
-    }
-    */
-
 
     //TODO ler ficheiro e tratar dos dados
 
@@ -238,7 +268,9 @@ int main(int argc, char** argv) {
     bool end_game = false;
     board_t game_board;
 
+    read_lvl_file(fd, &game_board);
     while (!end_game) {
+        
         load_level(&game_board, accumulated_points);
         draw_board(&game_board, DRAW_MENU);
         refresh_screen();
@@ -271,5 +303,7 @@ int main(int argc, char** argv) {
 
     close_debug_file();
 
+
+    free(lvl_files);
     return 0;
 }
