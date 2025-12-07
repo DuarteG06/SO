@@ -3,6 +3,10 @@
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
+#include <string.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <dirent.h>
 
 #define CONTINUE_PLAY 0
 #define NEXT_LEVEL 1
@@ -67,13 +71,160 @@ int play_board(board_t * game_board) {
     return CONTINUE_PLAY;  
 }
 
+
+char* read_file(int fd){
+    int stride = 128;
+    char *buffer = malloc(stride* sizeof(char));
+    int buf_free = stride;
+    int buf_total = stride;
+    int buf_bytes_written =0;
+
+    /* read the contents of the file */
+    int bytes_read =1;
+    int done = 0;
+    while (bytes_read !=0) {
+        if(buf_free < stride){
+                buffer = realloc(buffer, buf_total +stride);
+                buf_free += stride;
+                buf_total += stride;
+                if(buffer == NULL){
+                    free(buffer);
+                    return 0;
+                }
+        }
+
+
+
+        int bytes_read = read(fd, buffer + done, stride);
+
+        if (bytes_read < 0) {
+            perror("read error");
+            return NULL;
+        }
+
+        /* if we read 0 bytes, we're done */
+        if (bytes_read == 0) {
+            break;
+        }
+
+        /**
+         * it might not have managed to read all data.
+         * like on open-write, if you're curious, try to find out why, in this
+         * case, the program will always be able to read it all.
+         */
+        done += bytes_read;
+        buf_free -= bytes_read;
+        buf_bytes_written += bytes_read;
+    }
+    return buffer;
+}
+
+int is_lvl_file(char *file){
+    size_t len = strlen(file);
+    if (len < 4) return 0;
+    return strcmp(file + len - 4, ".lvl") == 0;
+}
+
+char **get_lvl_files(char *inputdir, int *count){
+    DIR *dir = opendir(inputdir);
+    if (dir == NULL) {
+        perror("opendir");
+        return NULL;
+    }
+
+    struct dirent *entry;
+    int free_size =4;
+    int n =0;
+    char **files = malloc(free_size *sizeof(char*));
+    if (!files) {
+        perror("malloc");
+        closedir(dir);
+        return NULL;
+    }
+
+    while((entry =readdir(dir)) !=NULL){
+        if(is_lvl_file(entry->d_name)){
+            if(n>=free_size){
+                free_size *=2;
+                files = realloc(files, free_size * sizeof(char*));
+                if(files == NULL){
+                    perror("realloc lvl files");
+                    for (int i = 0; i < n; i++) free(files[i]);
+                    free(files);
+                    closedir(dir);
+                    return NULL;
+                }
+            }
+            files[n] = strdup(entry->d_name);
+            if (!files[n]) {
+                perror("strdup");
+                for (int i = 0; i < n; i++) free(files[i]);
+                free(files);
+                closedir(dir);
+                return NULL;
+            }
+            n++;
+        }
+
+        
+    }
+    closedir(dir);
+    *count = n;
+    return files;
+}
+
+
+
+
 int main(int argc, char** argv) {
     if (argc != 2) {
         printf("Usage: %s <level_directory>\n", argv[0]);
         // TODO receive inputs
     }
+    int count;
+
+    char **lvl_files = get_lvl_files(argv[1], &count);
+    if(lvl_files ==  NULL){
+        return 1;
+    }
+    for (int i = 0; i < count; i++) {
+        printf("%s\n", lvl_files[i]);
+        free(lvl_files[i]); // free individual strings
+    }
+    free(lvl_files);
+    
+
+    
 
 
+    /* 
+    int fd = open(argv[1], O_RDONLY);
+
+    char *buffer = read_file(fd);
+    */
+    
+
+
+    /*
+    char *start = buffer;
+    char *end;
+
+    while ((end = strchr(start, '\n')) != NULL) {
+        *end = '\0'; // temporarily terminate the line
+        // Apply your code to the line here
+        printf("Line: %s\n", start);
+
+        start = end + 1; // move to next line
+    }
+
+    // Handle last line (if file does not end with newline)
+    if (*start != '\0') {
+        printf("Line: %s\n", start);
+    }
+    */
+
+
+    //TODO ler ficheiro e tratar dos dados
 
     // Random seed for any random movements
     srand((unsigned int)time(NULL));
