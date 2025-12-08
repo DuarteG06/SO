@@ -113,13 +113,17 @@ int main(int argc, char** argv) {
         char path[128];
         snprintf(path, sizeof(path), "%s/%s", argv[1], lvl_files[i]);
 
+        //strcpy(lvl_files[i], game_board.level_name);
+        //loads the level name
+        snprintf(game_board.level_name, sizeof(game_board.level_name), "%s", lvl_files[i]);
+
         int fd = open(path, O_RDONLY);
         if (fd < 0) {
             perror("open");
             return 1;
         }
         i++;
-
+        
 
         read_lvl_file(fd, &game_board, argv[1]);
 

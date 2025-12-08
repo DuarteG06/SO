@@ -60,7 +60,10 @@ int is_lvl_file(char *file){
     return strcmp(file + len - 4, ".lvl") == 0;
 }
 
-
+void free_lvl_files(char **lvl_files, int n){
+    for (int i = 0; i < n; i++) free(lvl_files[i]);
+    free(lvl_files);
+}
 
 char **get_lvl_files(char *inputdir, int *count){
     DIR *dir = opendir(inputdir);
@@ -84,8 +87,7 @@ char **get_lvl_files(char *inputdir, int *count){
                 files = realloc(files, free_size * sizeof(char*));
                 if(files == NULL){
                     perror("realloc lvl files");
-                    for (int i = 0; i < n; i++) free(files[i]);
-                    free(files);
+                    free_lvl_files(files, n);
                     closedir(dir);
                     return NULL;
                 }
@@ -93,8 +95,7 @@ char **get_lvl_files(char *inputdir, int *count){
             files[n] = strdup(entry->d_name);
             if (!files[n]) {
                 perror("strdup");
-                for (int i = 0; i < n; i++) free(files[i]);
-                free(files);
+                free_lvl_files(files, n);
                 closedir(dir);
                 return NULL;
             }
@@ -109,7 +110,8 @@ char **get_lvl_files(char *inputdir, int *count){
 void read_lvl_file(int fd, board_t *board, char *path){
     char *start = read_file(fd);
     char *end;
-    int line_number =0;
+    int line_number =0; //used for building the board
+    int ghost_index =0;
     while ((end = strchr(start, '\n')) != NULL) {
         *end = '\0';  
         if(start[0] != '#'){
@@ -120,7 +122,6 @@ void read_lvl_file(int fd, board_t *board, char *path){
                 board->width = width;
                 board->height = height;
                 board->board = calloc(board->width * board->height, sizeof(board_pos_t));
-                
                 
             }else if(strncmp(start, "PAC ", 4) ==0){
                 char *rest = start + 4;
@@ -133,8 +134,31 @@ void read_lvl_file(int fd, board_t *board, char *path){
                 }
                 read_pac_file(fd, board);
 
+
             }else if(strncmp(start, "MON ", 4) ==0){
-                
+                char *rest = start +4;
+                //counting how many monsters there will be
+                int ghost_count = 1;
+                for (int j = 0; rest[j] != '\0'; j++) {
+                    if (rest[j] == ' '){
+                        ghost_count++;
+                    }
+                }
+                board->n_ghosts = ghost_count;
+                board->ghosts = calloc(board->n_ghosts, sizeof(ghost_t));
+                char *mon_file = strtok(rest, " ");
+                while(mon_file != NULL){
+                    char mon_path[128];
+                    snprintf(mon_path, sizeof(mon_path), "%s/%s", path, mon_file);
+                    int fd = open(mon_path, O_RDONLY);
+                    if (fd < 0) {
+                        perror("open");
+                        return;
+                    }
+                    read_mon_file(fd, board, ghost_index);
+                    mon_file = strtok(NULL, " ");
+                    ghost_index++;
+                }
             }else if(strncmp(start, "TEMPO ", 6) ==0){
                 char *rest = start + 6;
                 int tempo;
@@ -184,6 +208,24 @@ void read_pac_file(int fd, board_t *board){
                 sscanf(rest, "%d %d", &X, &Y);
                 board->pacmans[0].pos_x = X;
                 board->pacmans[0].pos_y = Y;
+            }
+        }
+        start = end + 1; // move to the next line
+    }
+    return;
+}
+
+
+void read_mon_file(int fd, board_t *board, int ghost_index){
+    char *start = read_file(fd);
+    char *end;
+
+    while ((end = strchr(start, '\n')) != NULL) {
+        *end = '\0';  
+        
+        if(start[0] != '#'){
+            if(strncmp(start, "POS ", 4) ==0){
+                
             }
         }
         start = end + 1; // move to the next line
