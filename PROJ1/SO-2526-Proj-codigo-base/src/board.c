@@ -376,34 +376,34 @@ int load_ghost(board_t* board) {
 }
 
 int load_level(board_t *board, int points) {
-    board->height = 5;
-    board->width = 10;
-    board->tempo = 10;
+    // board->height = 5;
+    // board->width = 10;
+    //board->tempo = 10;
 
     board->n_ghosts = 2;
     board->n_pacmans = 1;
 
-    board->board = calloc(board->width * board->height, sizeof(board_pos_t));
+    //board->board = calloc(board->width * board->height, sizeof(board_pos_t));
     board->pacmans = calloc(board->n_pacmans, sizeof(pacman_t));
     board->ghosts = calloc(board->n_ghosts, sizeof(ghost_t));
 
     sprintf(board->level_name, "Static Level");
 
-    for (int i = 0; i < board->height; i++) {
-        for (int j = 0; j < board->width; j++) {
-            if (i == 0 || j == 0 || j == (board->width - 1)) {
-                board->board[i * board->width + j].content = 'W';
-            }
-            else if (i == 4 && j == 8) {
-                board->board[i * board->width + j].content = ' ';
-                board->board[i * board->width + j].has_portal = 1;
-            }
-            else {
-                board->board[i * board->width + j].content = ' ';
-                board->board[i * board->width + j].has_dot = 1;
-            }
-        }
-    }
+    // for (int i = 0; i < board->height; i++) {
+    //     for (int j = 0; j < board->width; j++) {
+    //         if (i == 0 || j == 0 || j == (board->width - 1)) {
+    //             board->board[i * board->width + j].content = 'W';
+    //         }
+    //         else if (i == 4 && j == 8) {
+    //             board->board[i * board->width + j].content = ' ';
+    //             board->board[i * board->width + j].has_portal = 1;
+    //         }
+    //         else {
+    //             board->board[i * board->width + j].content = ' ';
+    //             board->board[i * board->width + j].has_dot = 1;
+    //         }
+    //     }
+    // }
 
     load_ghost(board);
     load_pacman(board, points);
