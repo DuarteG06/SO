@@ -125,10 +125,11 @@ int main(int argc, char** argv) {
         i++;
         
 
-        read_lvl_file(fd, &game_board, argv[1]);
+        read_lvl_file(fd, &game_board, argv[1], accumulated_points);
 
 
-        load_level(&game_board, accumulated_points);
+        //load_level(&game_board, accumulated_points);
+        
         draw_board(&game_board, DRAW_MENU);
         refresh_screen();
 

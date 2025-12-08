@@ -15,11 +15,23 @@ void free_lvl_files(char **lvl_files, int n);
 //returns an array of all level files in a directory
 char **get_lvl_files(char *inputdir, int *count);
 
+//sets up board dim
+void set_board_dim(char *dim, board_t *board);
+
+//prepares to call read_pac_file
+void prepare_and_read_pac_file(board_t *board, char *line, int points, char *path);
+
+//sets memory for ghosts
+void set_memory_for_ghosts(board_t *board, char *mon_files);
+
+//prepares to call read_mon_file
+void prepare_and_read_mon_file(board_t *board, char *mon_files, char *dirpath);
+
 //manages level files
-void read_lvl_file(int fd, board_t *board, char *path);
+void read_lvl_file(int fd, board_t *board, char *path, int points);
 
 //manages pacman files
-void read_pac_file(int fd, board_t *board);
+void read_pac_file(int fd, board_t *board, int points);
 
 //manages monster files
 void read_mon_file(int fd, board_t *board, int ghost_index);
