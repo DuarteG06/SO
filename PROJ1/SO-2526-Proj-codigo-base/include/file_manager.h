@@ -27,6 +27,12 @@ void set_memory_for_ghosts(board_t *board, char *mon_files);
 //prepares to call read_mon_file
 void prepare_and_read_mon_file(board_t *board, char *mon_files, char *dirpath);
 
+//saves the initialized board
+void store_game_board(board_t *board, char *line, int line_number);
+
+//loads pacman for player input
+void load_pacman_for_player(board_t *board, int points);
+
 //manages level files
 void read_lvl_file(int fd, board_t *board, char *path, int points);
 

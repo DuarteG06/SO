@@ -161,7 +161,45 @@ void prepare_and_read_mon_file(board_t *board, char *mon_files, char *dirpath){
     }
 }
 
+void store_game_board(board_t *board, char *line, int line_number){
+    char c;
+    for (int i = 0; line[i] != '\0'; i++) {
+        c = line[i];
+        char current =board->board[board->width*line_number + i].content;
+        if(current != 'P' && current != 'M'){
+            if(c =='X'){
+                board->board[board->width*line_number + i].content = 'W';
+            }else if(c == 'o'){
+                board->board[board->width*line_number + i].content = ' ';
+                board->board[board->width*line_number + i].has_dot = 1;
+            }else if(c == '@'){
+                board->board[board->width*line_number + i].content = ' ';
+                board->board[board->width*line_number + i].has_portal = 1;
+            }
+        }else{
+            board->board[board->width*line_number + i].has_dot = 1;
+        }   
+    }
+}
 
+void load_pacman_for_player(board_t *board, int points){
+    board->pacmans = calloc(board->n_pacmans, sizeof(pacman_t));
+    int pacman_count =1;
+    board->n_pacmans = pacman_count;
+    board->pacmans[0].n_moves = 0;
+    board->pacmans[0].alive =1;
+    board->pacmans[0].points = points;
+    for(int i =0; i<board->width * board->height; i++){
+        if(board->board[i].content == ' ' && board->board[i].has_portal !=1){
+            int pos_y = i / board->width;
+            int pos_x = i % board->width;
+            board->pacmans[0].pos_x = pos_x;
+            board->pacmans[0].pos_y = pos_y;
+            board->board[pos_y * board->width + pos_x].content = 'P';
+            break;
+        }
+    }
+}
 
 
 void read_lvl_file(int fd, board_t *board, char *path, int points){
@@ -195,28 +233,7 @@ void read_lvl_file(int fd, board_t *board, char *path, int points){
                 sscanf(rest, "%d", &tempo);
                 board->tempo =tempo;
             }else{
-                char c;
-
-                for (int i = 0; start[i] != '\0'; i++) {
-                    c = start[i];
-                    char current =board->board[board->width*line_number + i].content;
-                    if(current != 'P' && current != 'M'){
-                        if(c =='X'){
-                            board->board[board->width*line_number + i].content = 'W';
-                        }else if(c == 'o'){
-                            board->board[board->width*line_number + i].content = ' ';
-                            board->board[board->width*line_number + i].has_dot = 1;
-                        }else if(c == '@'){
-                            board->board[board->width*line_number + i].content = ' ';
-                            board->board[board->width*line_number + i].has_portal = 1;
-                        }
-                    }else{
-                        board->board[board->width*line_number + i].has_dot = 1;
-                    }
-                    
-                    
-                    
-                }
+                store_game_board(board, start, line_number);
                 line_number++;
                 
             }
@@ -225,22 +242,7 @@ void read_lvl_file(int fd, board_t *board, char *path, int points){
         start = end + 1; // move to the next line
     }
     if(has_pac ==0){
-        board->pacmans = calloc(board->n_pacmans, sizeof(pacman_t));
-        int pacman_count =1;
-        board->n_pacmans = pacman_count;
-        board->pacmans[0].n_moves = 0;
-        board->pacmans[0].alive =1;
-        board->pacmans[0].points = points;
-        for(int i =0; i<board->width * board->height; i++){
-            if(board->board[i].content == ' ' && board->board[i].has_portal !=1){
-                int pos_y = i / board->width;
-                int pos_x = i % board->width;
-                board->pacmans[0].pos_x = pos_x;
-                board->pacmans[0].pos_y = pos_y;
-                board->board[pos_y * board->width + pos_x].content = 'P';
-                break;
-            }
-        }
+        load_pacman_for_player(board, points);
     }
     // Provavelmente n será util
     // if (*start != '\0') {
@@ -272,7 +274,7 @@ void read_pac_file(int fd, board_t *board, int points){
                 int passo;
                 sscanf(rest, "%d", &passo);
                 board->pacmans[0].passo = passo;
-                //board->pacmans[0].waiting = passo; //not sure
+                board->pacmans[0].waiting = passo; //not sure
             }
             else{
                 int turns_left;
