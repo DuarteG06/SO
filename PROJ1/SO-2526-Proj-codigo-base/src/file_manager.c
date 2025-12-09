@@ -128,7 +128,7 @@ void prepare_and_read_pac_file(board_t *board, char *line, int points, char *dir
         perror("open");
         return;
     }
-    read_pac_file(fd, board, points);
+    load_pacman(board, fd, points);
 }
 
 void set_memory_for_ghosts(board_t *board, char *mon_files){
@@ -155,7 +155,7 @@ void prepare_and_read_mon_file(board_t *board, char *mon_files, char *dirpath){
             perror("open");
             return;
         }
-        read_mon_file(fd, board, ghost_index);
+        load_ghost(board, fd, ghost_index);
         mon_file = strtok(NULL, " ");
         ghost_index++;
     }
@@ -202,160 +202,184 @@ void load_pacman_for_player(board_t *board, int points){
 }
 
 
-void read_lvl_file(int fd, board_t *board, char *path, int points){
-    char *start = read_file(fd);
-    char *end;
-    int has_pac = 0;
-    int line_number =0; //used for building the board
+// void read_lvl_file(int fd, board_t *board, char *path, int points){
+//     char *start = read_file(fd);
+//     char *end;
+//     int has_pac = 0;
+//     int line_number =0; //used for building the board
     
-    while ((end = strchr(start, '\n')) != NULL) {
-        *end = '\0';  
-        if(start[0] != '#'){
-            if(strncmp(start, "DIM ", 4) ==0){
-                char *rest = start + 4;
-                set_board_dim(rest, board);
+//     while ((end = strchr(start, '\n')) != NULL) {
+//         *end = '\0';  
+//         if(start[0] != '#'){
+//             if(strncmp(start, "DIM ", 4) ==0){
+//                 char *rest = start + 4;
+//                 set_board_dim(rest, board);
                 
-            }else if(strncmp(start, "PAC ", 4) ==0){
-                has_pac = 1;
-                char *rest = start + 4;
-                prepare_and_read_pac_file(board, rest, points, path);
+//             }else if(strncmp(start, "PAC ", 4) ==0){
+//                 has_pac = 1;
+//                 char *rest = start + 4;
+//                 prepare_and_read_pac_file(board, rest, points, path);
                 
 
-            }else if(strncmp(start, "MON ", 4) ==0){
-                char *rest = start +4;
-                //counting how many monsters there will be
-                set_memory_for_ghosts(board, rest);
-                prepare_and_read_mon_file(board, rest, path);
+//             }else if(strncmp(start, "MON ", 4) ==0){
+//                 char *rest = start +4;
+//                 //counting how many monsters there will be
+//                 set_memory_for_ghosts(board, rest);
+//                 prepare_and_read_mon_file(board, rest, path);
 
-            }else if(strncmp(start, "TEMPO ", 6) ==0){
-                char *rest = start + 6;
-                int tempo;
-                sscanf(rest, "%d", &tempo);
-                board->tempo =tempo;
-            }else{
-                store_game_board(board, start, line_number);
-                line_number++;
+//             }else if(strncmp(start, "TEMPO ", 6) ==0){
+//                 char *rest = start + 6;
+//                 int tempo;
+//                 sscanf(rest, "%d", &tempo);
+//                 board->tempo =tempo;
+//             }else{
+//                 store_game_board(board, start, line_number);
+//                 line_number++;
                 
-            }
+//             }
             
-        }
-        start = end + 1; // move to the next line
-    }
-    if(has_pac ==0){
-        load_pacman_for_player(board, points);
-    }
+//         }
+//         start = end + 1; // move to the next line
+//     }
+//     if(has_pac ==0){
+//         load_pacman_for_player(board, points);
+//     }
     // Provavelmente n será util
     // if (*start != '\0') {
     //     printf("Line: %s\n", start);
     // }
+//}
+
+
+void store_pac_pos(board_t *board, char *linePos){
+    int X, Y;
+    sscanf(linePos, "%d %d", &X, &Y);
+    board->pacmans[0].pos_x = X;
+    board->pacmans[0].pos_y = Y;
+    board->board[Y * board->width + X].content = 'P';
 }
 
+void store_pac_passo(board_t *board, char *linePasso){
+    int passo;
+    sscanf(linePasso, "%d", &passo);
+    board->pacmans[0].passo = passo;
+    board->pacmans[0].waiting = passo; //not sure
+}
 
-void read_pac_file(int fd, board_t *board, int points){
-    char *start = read_file(fd);
-    char *end;
-    int move_index=0;
-    board->pacmans[0].alive =1;
-    board->pacmans[0].points = points;
-    while ((end = strchr(start, '\n')) != NULL) {
-        *end = '\0';  
-        
-        if(start[0] != '#'){
-            if(strncmp(start, "POS ", 4) ==0){
-                char *rest = start + 4;
-                int X, Y;
-                sscanf(rest, "%d %d", &X, &Y);
-                board->pacmans[0].pos_x = X;
-                board->pacmans[0].pos_y = Y;
-                board->board[Y * board->width + X].content = 'P';
-            }
-            else if(strncmp(start, "PASSO ", 6) ==0){
-                char *rest = start +4;
-                int passo;
-                sscanf(rest, "%d", &passo);
-                board->pacmans[0].passo = passo;
-                board->pacmans[0].waiting = passo; //not sure
-            }
-            else{
-                int turns_left;
-                char move;
-                sscanf(start, "%c %d", &move, &turns_left);
-                switch (move)
-                {
-                case 'T':
-                    board->pacmans[0].moves[move_index].command = move;
-                    board->pacmans[0].moves[move_index].turns_left = turns_left;
-                    board->pacmans[0].moves[move_index].turns = 1;
-                    break;
-                
-                default:
-                    board->pacmans[0].moves[move_index].command = move;
-                    //board->pacmans[0].moves[move_index].turns_left = 1;
-                    board->pacmans[0].moves[move_index].turns = 1;
-                    break;
-                }
-                move_index++;
-            }
-        }
-        start = end + 1; // move to the next line
+void store_pac_moves(board_t *board, char *command, int move_index){
+    int turns_left;
+    char move;
+    sscanf(command, "%c %d", &move, &turns_left);
+    switch (move)
+    {
+    case 'T':
+        board->pacmans[0].moves[move_index].command = move;
+        board->pacmans[0].moves[move_index].turns_left = turns_left;
+        board->pacmans[0].moves[move_index].turns = 1;
+        break;
+    
+    default:
+        board->pacmans[0].moves[move_index].command = move;
+        board->pacmans[0].moves[move_index].turns_left = 1;
+        board->pacmans[0].moves[move_index].turns = 1;
+        break;
     }
-    board->pacmans[0].n_moves = move_index;
-    return;
+}
+
+// void read_pac_file(int fd, board_t *board, int points){
+//     char *start = read_file(fd);
+//     char *end;
+//     int move_index=0;
+//     board->pacmans[0].alive =1;
+//     board->pacmans[0].points = points;
+//     while ((end = strchr(start, '\n')) != NULL) {
+//         *end = '\0';  
+        
+//         if(start[0] != '#'){
+//             if(strncmp(start, "POS ", 4) ==0){
+//                 char *rest = start + 4;
+//                 store_pac_pos(board, rest);
+//             }
+//             else if(strncmp(start, "PASSO ", 6) ==0){
+//                 char *rest = start +6;
+//                 store_pac_passo(board, rest);
+//             }
+//             else{
+//                 store_pac_moves(board, start, move_index);
+//                 move_index++;
+//             }
+//         }
+//         start = end + 1; // move to the next line
+//     }
+//     board->pacmans[0].n_moves = move_index;
+//     return;
+// }
+
+
+void store_mon_pos(board_t *board, int ghost_index, char *linePos){
+    int X, Y;
+    sscanf(linePos, "%d %d", &X, &Y);
+    board->ghosts[ghost_index].pos_x = X;
+    board->ghosts[ghost_index].pos_y = Y;
+    board->board[Y * board->width + X].content = 'M'; // Monster
+}
+
+void store_mon_passo(board_t *board, int ghost_index, char *linePasso){
+    int passo;
+    sscanf(linePasso, "%d", &passo);
+    board->ghosts[ghost_index].passo = passo;
+    board->ghosts[ghost_index].waiting = passo; //not sure
+}
+
+void store_mon_moves(board_t *board, int ghost_index, char *moveInput, int move_index){
+    int turns_left;
+    char move;
+    sscanf(moveInput, "%c %d", &move, &turns_left);
+    switch (move)
+    {
+    case 'T':
+        board->ghosts[ghost_index].moves[move_index].command = move;
+        board->ghosts[ghost_index].moves[move_index].turns_left = turns_left;
+        board->ghosts[ghost_index].moves[move_index].turns = 1;
+        break;
+    
+    default:
+        board->ghosts[ghost_index].moves[move_index].command = move;
+        board->ghosts[ghost_index].moves[move_index].turns_left = 1;
+        board->ghosts[ghost_index].moves[move_index].turns = 1;
+        break;
+    }
 }
 
 
-void read_mon_file(int fd, board_t *board, int ghost_index){
-    char *start = read_file(fd);
-    char *end;
-    int move_index =0;
-    board->ghosts[ghost_index].current_move= 0;
-    board->ghosts[ghost_index].charged =0;
+// void read_mon_file(int fd, board_t *board, int ghost_index){
+//     char *start = read_file(fd);
+//     char *end;
+//     int move_index =0;
+//     board->ghosts[ghost_index].current_move= 0;
+//     board->ghosts[ghost_index].charged =0;
 
 
-    while ((end = strchr(start, '\n')) != NULL) {
-        *end = '\0';  
+//     while ((end = strchr(start, '\n')) != NULL) {
+//         *end = '\0';  
         
-        if(start[0] != '#'){
-            if(strncmp(start, "POS ", 4) ==0){
-                char *rest = start + 4;
-                int X, Y;
-                sscanf(rest, "%d %d", &X, &Y);
-                board->ghosts[ghost_index].pos_x = X;
-                board->ghosts[ghost_index].pos_y = Y;
-                board->board[Y * board->width + X].content = 'M'; // Monster
-            }
-            else if(strncmp(start, "PASSO ", 6) ==0){
-                char *rest = start +4;
-                int passo;
-                sscanf(rest, "%d", &passo);
-                board->ghosts[ghost_index].passo = passo;
-                //maybe
-                board->ghosts[ghost_index].waiting = passo; //not sure
-            }
-            else{
-                int turns_left;
-                char move;
-                sscanf(start, "%c %d", &move, &turns_left);
-                switch (move)
-                {
-                case 'T':
-                    board->ghosts[ghost_index].moves[move_index].command = move;
-                    board->ghosts[ghost_index].moves[move_index].turns_left = turns_left;
-                    board->ghosts[ghost_index].moves[move_index].turns = 1;
-                    break;
-                
-                default:
-                    board->ghosts[ghost_index].moves[move_index].command = move;
-                    //board->ghosts[ghost_index].moves[move_index].turns_left = 1;
-                    board->ghosts[ghost_index].moves[move_index].turns = 1;
-                    break;
-                }
-                move_index++;
-            }
+//         if(start[0] != '#'){
+//             if(strncmp(start, "POS ", 4) ==0){
+//                 char *rest = start + 4;
+//                 store_mon_pos(board, ghost_index, rest);
+//             }
+//             else if(strncmp(start, "PASSO ", 6) ==0){
+//                 char *rest = start +6;
+//                 store_mon_passo(board, ghost_index, rest);
+//             }
+//             else{
+//                 store_mon_moves(board, ghost_index, start, move_index);
+//                 move_index++;
+//             }
             
-        }   
-        start = end + 1; // move to the next line
-    }
-    board->ghosts[ghost_index].n_moves = move_index;
-    return;
-}
+//         }   
+//         start = end + 1; // move to the next line
+//     }
+//     board->ghosts[ghost_index].n_moves = move_index;
+//     return;
+// }

@@ -34,13 +34,31 @@ void store_game_board(board_t *board, char *line, int line_number);
 void load_pacman_for_player(board_t *board, int points);
 
 //manages level files
-void read_lvl_file(int fd, board_t *board, char *path, int points);
+//void read_lvl_file(int fd, board_t *board, char *path, int points);
+
+//stores inicial pacman position
+void store_pac_pos(board_t *board, char *linePos);
+
+//stores pacman passo
+void store_pac_passo(board_t *board, char *linePasso);
+
+//stores pacman moves
+void store_pac_moves(board_t *board, char *command, int move_index);
 
 //manages pacman files
-void read_pac_file(int fd, board_t *board, int points);
+//void read_pac_file(int fd, board_t *board, int points);
+
+//stores monster inicial position
+void store_mon_pos(board_t *board, int ghost_index, char *linePos);
+
+//stores monster passo
+void store_mon_passo(board_t *board, int ghost_index, char *linePasso);
+
+//stores monster moves
+void store_mon_moves(board_t *board, int ghost_index, char *moveInput, int move_index);
 
 //manages monster files
-void read_mon_file(int fd, board_t *board, int ghost_index);
+//void read_mon_file(int fd, board_t *board, int ghost_index);
 
 
 #endif

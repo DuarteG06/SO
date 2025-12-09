@@ -5,6 +5,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <stdarg.h>
+#include <string.h>
 
 FILE * debugfile;
 
@@ -334,55 +335,160 @@ void kill_pacman(board_t* board, int pacman_index) {
 }
 
 // Static Loading
-int load_pacman(board_t* board, int points) {
-    board->board[1 * board->width + 1].content = 'P'; // Pacman
-    board->pacmans[0].pos_x = 1;
-    board->pacmans[0].pos_y = 1;
-    board->pacmans[0].alive = 1;
+int load_pacman(board_t* board, int fd, int points) {
+
+
+    char *start = read_file(fd);
+    char *end;
+    int move_index=0;
+    board->pacmans[0].alive =1;
     board->pacmans[0].points = points;
+    while ((end = strchr(start, '\n')) != NULL) {
+        *end = '\0';  
+        
+        if(start[0] != '#'){
+            if(strncmp(start, "POS ", 4) ==0){
+                char *rest = start + 4;
+                store_pac_pos(board, rest);
+            }
+            else if(strncmp(start, "PASSO ", 6) ==0){
+                char *rest = start +6;
+                store_pac_passo(board, rest);
+            }
+            else{
+                store_pac_moves(board, start, move_index);
+                move_index++;
+            }
+        }
+        start = end + 1; // move to the next line
+    }
+    board->pacmans[0].n_moves = move_index;
+    // board->board[1 * board->width + 1].content = 'P'; // Pacman
+    // board->pacmans[0].pos_x = 1;
+    // board->pacmans[0].pos_y = 1;
+    // board->pacmans[0].alive = 1;
+    // board->pacmans[0].points = points;
+    // return 0;
     return 0;
 }
 
 // Static Loading
-int load_ghost(board_t* board) {
+int load_ghost(board_t* board, int fd, int ghost_index) {
+
+    char *start = read_file(fd);
+    char *end;
+    int move_index =0;
+    board->ghosts[ghost_index].current_move= 0;
+    board->ghosts[ghost_index].charged =0;
+
+
+    while ((end = strchr(start, '\n')) != NULL) {
+        *end = '\0';  
+        
+        if(start[0] != '#'){
+            if(strncmp(start, "POS ", 4) ==0){
+                char *rest = start + 4;
+                store_mon_pos(board, ghost_index, rest);
+            }
+            else if(strncmp(start, "PASSO ", 6) ==0){
+                char *rest = start +6;
+                store_mon_passo(board, ghost_index, rest);
+            }
+            else{
+                store_mon_moves(board, ghost_index, start, move_index);
+                move_index++;
+            }
+            
+        }   
+        start = end + 1; // move to the next line
+    }
+    board->ghosts[ghost_index].n_moves = move_index;
+    
     // Ghost 0
-    board->board[3 * board->width + 1].content = 'M'; // Monster
-    board->ghosts[0].pos_x = 1;
-    board->ghosts[0].pos_y = 3;
-    board->ghosts[0].passo = 0;
-    board->ghosts[0].waiting = 0;
-    board->ghosts[0].current_move = 0;
-    board->ghosts[0].n_moves = 16;
-    for (int i = 0; i < 8; i++) {
-        board->ghosts[0].moves[i].command = 'D';
-        board->ghosts[0].moves[i].turns = 1; 
-    }
-    for (int i = 8; i < 16; i++) {
-        board->ghosts[0].moves[i].command = 'A';
-        board->ghosts[0].moves[i].turns = 1; 
-    }
+    // board->board[3 * board->width + 1].content = 'M'; // Monster
+    // board->ghosts[0].pos_x = 1;
+    // board->ghosts[0].pos_y = 3;
+    // board->ghosts[0].passo = 0;
+    // board->ghosts[0].waiting = 0;
+    // board->ghosts[0].current_move = 0;
+    // board->ghosts[0].n_moves = 16;
+    // for (int i = 0; i < 8; i++) {
+    //     board->ghosts[0].moves[i].command = 'D';
+    //     board->ghosts[0].moves[i].turns = 1; 
+    // }
+    // for (int i = 8; i < 16; i++) {
+    //     board->ghosts[0].moves[i].command = 'A';
+    //     board->ghosts[0].moves[i].turns = 1; 
+    // }
 
     // Ghost 1
-    board->board[2 * board->width + 4].content = 'M'; // Monster
-    board->ghosts[1].pos_x = 4;
-    board->ghosts[1].pos_y = 2;
-    board->ghosts[1].passo = 1;
-    board->ghosts[1].waiting = 1;
-    board->ghosts[1].current_move = 0;
-    board->ghosts[1].n_moves = 1;
-    board->ghosts[1].moves[0].command = 'R'; // Random
-    board->ghosts[1].moves[0].turns = 1; 
+    // board->board[2 * board->width + 4].content = 'M'; // Monster
+    // board->ghosts[1].pos_x = 4;
+    // board->ghosts[1].pos_y = 2;
+    // board->ghosts[1].passo = 1;
+    // board->ghosts[1].waiting = 1;
+    // board->ghosts[1].current_move = 0;
+    // board->ghosts[1].n_moves = 1;
+    // board->ghosts[1].moves[0].command = 'R'; // Random
+    // board->ghosts[1].moves[0].turns = 1; 
     
     return 0;
 }
 
-int load_level(board_t *board, int points) {
+int load_level(board_t *board, int points, int fd, char *path) {
+    char *start = read_file(fd);
+    char *end;
+    int has_pac = 0;
+    int line_number =0; //used for building the board
+    
+    while ((end = strchr(start, '\n')) != NULL) {
+        *end = '\0';  
+        if(start[0] != '#'){
+            if(strncmp(start, "DIM ", 4) ==0){
+                char *rest = start + 4;
+                set_board_dim(rest, board);
+                
+            }else if(strncmp(start, "PAC ", 4) ==0){
+                has_pac = 1;
+                char *rest = start + 4;
+                prepare_and_read_pac_file(board, rest, points, path);
+                
+
+            }else if(strncmp(start, "MON ", 4) ==0){
+                char *rest = start +4;
+                //counting how many monsters there will be
+                set_memory_for_ghosts(board, rest);
+                prepare_and_read_mon_file(board, rest, path);
+
+            }else if(strncmp(start, "TEMPO ", 6) ==0){
+                char *rest = start + 6;
+                int tempo;
+                sscanf(rest, "%d", &tempo);
+                board->tempo =tempo;
+            }else{
+                store_game_board(board, start, line_number);
+                line_number++;
+                
+            }
+            
+        }
+        start = end + 1; // move to the next line
+    }
+    if(has_pac ==0){
+        load_pacman_for_player(board, points);
+    }
+    // Provavelmente n será util
+    // if (*start != '\0') {
+    //     printf("Line: %s\n", start);
+    // }
+
+
     // board->height = 5;
     // board->width = 10;
     //board->tempo = 10;
 
-    board->n_ghosts = 2;
-    board->n_pacmans = 1;
+    // board->n_ghosts = 2;
+    // board->n_pacmans = 1;
 
     //board->board = calloc(board->width * board->height, sizeof(board_pos_t));
     //board->pacmans = calloc(board->n_pacmans, sizeof(pacman_t));
@@ -406,8 +512,8 @@ int load_level(board_t *board, int points) {
     //     }
     // }
 
-    load_ghost(board);
-    load_pacman(board, points);
+    // load_ghost(board);
+    // load_pacman(board, points);
 
     return 0;
 }

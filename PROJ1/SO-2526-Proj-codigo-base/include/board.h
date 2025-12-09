@@ -72,13 +72,13 @@ int move_ghost(board_t* board, int ghost_index, command_t* command);
 void kill_pacman(board_t* board, int pacman_index);
 
 /*Adds a pacman to the board*/
-int load_pacman(board_t* board, int points);
+int load_pacman(board_t* board, int fd, int points);
 
 /*Adds a ghost(monster) to the board*/
-int load_ghost(board_t* board);
+int load_ghost(board_t* board, int fd, int ghost_index);
 
 /*Loads a level into board*/
-int load_level(board_t* board, int accumulated_points);
+int load_level(board_t* board, int accumulated_points, int fd, char *path);
 
 /*Unloads levels loaded by load_level*/
 void unload_level(board_t * board);
