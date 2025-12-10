@@ -8,12 +8,15 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <dirent.h>
+#include <sys/wait.h>
+#include <signal.h>
 
 #define CONTINUE_PLAY 0
 #define NEXT_LEVEL 1
 #define QUIT_GAME 2
 #define LOAD_BACKUP 3
 #define CREATE_BACKUP 4
+#define WON_GAME 5
 
 void screen_refresh(board_t * game_board, int mode) {
     debug("REFRESH\n");
@@ -46,6 +49,9 @@ int play_board(board_t * game_board) {
 
     if (play->command == 'Q') {
         return QUIT_GAME;
+    }
+    else if(play->command == 'G'){
+        return CREATE_BACKUP;
     }
 
     int result = move_pacman(game_board, 0, play);
@@ -143,10 +149,45 @@ int main(int argc, char** argv) {
             }
 
             if(result == QUIT_GAME) {
+                //suposto mostrar o game over ou voltar logo
+                if(game_board.on_save ==1){
+                    exit(0);
+                }
                 screen_refresh(&game_board, DRAW_GAME_OVER); 
                 sleep_ms(game_board.tempo);
+                
+
                 end_game = true;
                 break;
+            }
+
+            if(result == CREATE_BACKUP){
+                //criar fork
+                if(game_board.on_save ==0 ){
+                    game_board.on_save =1;
+                    pid_t pid = fork();
+                    if (pid < 0) {
+                        perror("fork failed");
+                        exit(1);
+                    }
+                    if(pid != 0){
+                        int status;
+                        pid_t waiting = waitpid(pid, &status, 0);
+                        if (waiting == -1) {
+                            perror("waitpid");
+                            exit(1);
+                        }
+                        if(WIFEXITED(status)){
+                            if(WEXITSTATUS(status)==WON_GAME){
+                                end_game = true;
+                                break;
+                            }
+                        }
+                        game_board.on_save =0;
+                    }
+
+                }
+                
             }
     
             screen_refresh(&game_board, DRAW_MENU); 
@@ -158,6 +199,9 @@ int main(int argc, char** argv) {
 
         if(i>=count){
             end_game = true;
+            if(game_board.on_save ==1){
+                exit(WON_GAME);
+            }
         }
     }    
 
