@@ -178,7 +178,7 @@ int main(int argc, char** argv) {
 
         //read_lvl_file(fd, &game_board, argv[1], accumulated_points);
 
-        pthread_mutex_lock(&game_board.lock);
+        pthread_mutex_lock(&game_board.lock); //os threads vao tar mortos neste ponto
         load_level(&game_board, accumulated_points, fd, argv[1]);
         pthread_mutex_unlock(&game_board.lock);
         
