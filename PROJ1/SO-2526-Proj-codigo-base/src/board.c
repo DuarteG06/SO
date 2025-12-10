@@ -126,7 +126,6 @@ int move_pacman(board_t* board, int pacman_index, command_t* command) {
     pac->pos_x = new_x;
     pac->pos_y = new_y;
     board->board[new_index].content = 'P';
-
     return VALID_MOVE;
 }
 
@@ -319,6 +318,8 @@ int move_ghost(board_t* board, int ghost_index, command_t* command) {
 
     // Update board - set new position
     board->board[new_index].content = 'M';
+
+    
     return result;
 }
 
@@ -337,8 +338,8 @@ void kill_pacman(board_t* board, int pacman_index) {
 // Static Loading
 int load_pacman(board_t* board, int fd, int points) {
 
-
-    char *start = read_file(fd);
+    char *buffer = read_file(fd);
+    char *start = buffer;
     char *end;
     int move_index=0;
     board->pacmans[0].alive =1;
@@ -369,13 +370,15 @@ int load_pacman(board_t* board, int fd, int points) {
     // board->pacmans[0].alive = 1;
     // board->pacmans[0].points = points;
     // return 0;
+    free(buffer);
     return 0;
 }
 
 // Static Loading
 int load_ghost(board_t* board, int fd, int ghost_index) {
 
-    char *start = read_file(fd);
+    char *buffer = read_file(fd);
+    char *start = buffer;
     char *end;
     int move_index =0;
     board->ghosts[ghost_index].current_move= 0;
@@ -431,12 +434,13 @@ int load_ghost(board_t* board, int fd, int ghost_index) {
     // board->ghosts[1].n_moves = 1;
     // board->ghosts[1].moves[0].command = 'R'; // Random
     // board->ghosts[1].moves[0].turns = 1; 
-    
+    free(buffer);
     return 0;
 }
 
 int load_level(board_t *board, int points, int fd, char *path) {
-    char *start = read_file(fd);
+    char *buffer = read_file(fd);
+    char *start = buffer;
     char *end;
     int has_pac = 0;
     int line_number =0; //used for building the board
@@ -477,6 +481,7 @@ int load_level(board_t *board, int points, int fd, char *path) {
     if(has_pac ==0){
         load_pacman_for_player(board, points);
     }
+    free(buffer);
     // Provavelmente n será util
     // if (*start != '\0') {
     //     printf("Line: %s\n", start);
