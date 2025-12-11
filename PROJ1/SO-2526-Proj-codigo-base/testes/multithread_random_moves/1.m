@@ -1,9 +1,5 @@
 PASSO 1
 POS 1 1
-C
-S
-T 3
-W
-W
-W
-W
+R
+R
+R

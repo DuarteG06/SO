@@ -38,8 +38,8 @@ $(BIN_DIR)/$(TARGET): $(OBJS) | folders
 
 # run the program
 run: pacmanist
-	@./$(BIN_DIR)/$(TARGET) inputfiles/ 
-# directory of the input files
+	@./$(BIN_DIR)/$(TARGET)
+# add a test directory to execute different tests
 
 # Create folders
 folders:
