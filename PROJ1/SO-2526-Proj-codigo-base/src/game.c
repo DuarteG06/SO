@@ -72,9 +72,9 @@ int play_board(board_t * game_board) {
         if(pacman->n_moves != 0){
             pacman->current_move++;
         }
-        
         return CREATE_BACKUP;
     }
+
 
     pthread_mutex_lock(&game_board->lock);
     int result = move_pacman(game_board, 0, play);
@@ -251,11 +251,20 @@ int main(int argc, char** argv) {
                 for(int i =0; i <game_board.n_ghosts; i++){
                    pthread_join(tid[i], NULL);
                 }
+                
 
                 
                 if(game_board.on_save ==1){
-
-                    exit(0);
+                    if(game_board.pacmans[0].alive ==1){
+                        exit(QUIT_GAME);
+                    }
+                    else{
+                        exit(0);
+                    }
+                }
+                if(game_board.pacmans[0].alive ==1){
+                    end_game = true;
+                    break;
                 }
 
                 screen_refresh(&game_board, DRAW_GAME_OVER); 
@@ -296,7 +305,11 @@ int main(int argc, char** argv) {
                             if(WEXITSTATUS(status)==WON_GAME){
                                 end_game = true;
                                 break;
-                            }else{
+                            }else if(WEXITSTATUS(status)==QUIT_GAME){
+                                end_game = true;
+                                break;
+                            }
+                            else{
                                 game_board.threads_live =1;
                                 pthread_t tid[game_board.n_ghosts];
                                 for(int i =0; i <game_board.n_ghosts; i++){

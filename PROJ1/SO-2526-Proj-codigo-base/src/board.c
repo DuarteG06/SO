@@ -445,8 +445,13 @@ int load_level(board_t *board, int points, int fd, char *path) {
     int has_pac = 0;
     int line_number =0; //used for building the board
     
-    while ((end = strchr(start, '\n')) != NULL) {
-        *end = '\0';  
+    while (*start != '\0') {
+
+        end = strchr(start, '\n');
+        if (end != NULL) {
+            *end = '\0';
+        }
+
         if(start[0] != '#'){
             if(strncmp(start, "DIM ", 4) ==0){
                 char *rest = start + 4;
@@ -476,16 +481,15 @@ int load_level(board_t *board, int points, int fd, char *path) {
             }
             
         }
+        if (end == NULL)
+            break; 
         start = end + 1; // move to the next line
     }
     if(has_pac ==0){
         load_pacman_for_player(board, points);
     }
     free(buffer);
-    // Provavelmente n será util
-    // if (*start != '\0') {
-    //     printf("Line: %s\n", start);
-    // }
+    
 
 
     // board->height = 5;
