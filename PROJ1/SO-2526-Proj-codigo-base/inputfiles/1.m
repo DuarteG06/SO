@@ -13,7 +13,11 @@ POS 1 1
 S
 S
 S
-D
+W
+W
+W
+W
+W
 T 2
 W
 S
