@@ -19,13 +19,13 @@ char *read_file(int fd){
     int done = 0;
     while (bytes_read !=0) {
         if(buf_free < stride){
-                buffer = realloc(buffer, buf_total +stride);
-                buf_free += stride;
-                buf_total += stride;
-                if(buffer == NULL){
-                    free(buffer);
-                    return 0;
-                }
+            buffer = realloc(buffer, buf_total +stride);
+            buf_free += stride;
+            buf_total += stride;
+            if(buffer == NULL){
+                free(buffer);
+                return 0;
+            }
         }
 
         bytes_read = read(fd, buffer + done, stride);
@@ -40,11 +40,7 @@ char *read_file(int fd){
             break;
         }
 
-        /**
-         * it might not have managed to read all data.
-         * like on open-write, if you're curious, try to find out why, in this
-         * case, the program will always be able to read it all.
-         */
+        
         done += bytes_read;
         buf_free -= bytes_read;
         buf_bytes_written += bytes_read;
@@ -215,55 +211,6 @@ void load_pacman_for_player(board_t *board, int points){
 }
 
 
-// void read_lvl_file(int fd, board_t *board, char *path, int points){
-//     char *start = read_file(fd);
-//     char *end;
-//     int has_pac = 0;
-//     int line_number =0; //used for building the board
-    
-//     while ((end = strchr(start, '\n')) != NULL) {
-//         *end = '\0';  
-//         if(start[0] != '#'){
-//             if(strncmp(start, "DIM ", 4) ==0){
-//                 char *rest = start + 4;
-//                 set_board_dim(rest, board);
-                
-//             }else if(strncmp(start, "PAC ", 4) ==0){
-//                 has_pac = 1;
-//                 char *rest = start + 4;
-//                 prepare_and_read_pac_file(board, rest, points, path);
-                
-
-//             }else if(strncmp(start, "MON ", 4) ==0){
-//                 char *rest = start +4;
-//                 //counting how many monsters there will be
-//                 set_memory_for_ghosts(board, rest);
-//                 prepare_and_read_mon_file(board, rest, path);
-
-//             }else if(strncmp(start, "TEMPO ", 6) ==0){
-//                 char *rest = start + 6;
-//                 int tempo;
-//                 sscanf(rest, "%d", &tempo);
-//                 board->tempo =tempo;
-//             }else{
-//                 store_game_board(board, start, line_number);
-//                 line_number++;
-                
-//             }
-            
-//         }
-//         start = end + 1; // move to the next line
-//     }
-//     if(has_pac ==0){
-//         load_pacman_for_player(board, points);
-//     }
-    // Provavelmente n será util
-    // if (*start != '\0') {
-    //     printf("Line: %s\n", start);
-    // }
-//}
-
-
 void store_pac_pos(board_t *board, char *linePos){
     int X, Y;
     sscanf(linePos, "%d %d", &X, &Y);
@@ -298,35 +245,6 @@ void store_pac_moves(board_t *board, char *command, int move_index){
         break;
     }
 }
-
-// void read_pac_file(int fd, board_t *board, int points){
-//     char *start = read_file(fd);
-//     char *end;
-//     int move_index=0;
-//     board->pacmans[0].alive =1;
-//     board->pacmans[0].points = points;
-//     while ((end = strchr(start, '\n')) != NULL) {
-//         *end = '\0';  
-        
-//         if(start[0] != '#'){
-//             if(strncmp(start, "POS ", 4) ==0){
-//                 char *rest = start + 4;
-//                 store_pac_pos(board, rest);
-//             }
-//             else if(strncmp(start, "PASSO ", 6) ==0){
-//                 char *rest = start +6;
-//                 store_pac_passo(board, rest);
-//             }
-//             else{
-//                 store_pac_moves(board, start, move_index);
-//                 move_index++;
-//             }
-//         }
-//         start = end + 1; // move to the next line
-//     }
-//     board->pacmans[0].n_moves = move_index;
-//     return;
-// }
 
 
 void store_mon_pos(board_t *board, int ghost_index, char *linePos){
@@ -363,36 +281,3 @@ void store_mon_moves(board_t *board, int ghost_index, char *moveInput, int move_
         break;
     }
 }
-
-
-// void read_mon_file(int fd, board_t *board, int ghost_index){
-//     char *start = read_file(fd);
-//     char *end;
-//     int move_index =0;
-//     board->ghosts[ghost_index].current_move= 0;
-//     board->ghosts[ghost_index].charged =0;
-
-
-//     while ((end = strchr(start, '\n')) != NULL) {
-//         *end = '\0';  
-        
-//         if(start[0] != '#'){
-//             if(strncmp(start, "POS ", 4) ==0){
-//                 char *rest = start + 4;
-//                 store_mon_pos(board, ghost_index, rest);
-//             }
-//             else if(strncmp(start, "PASSO ", 6) ==0){
-//                 char *rest = start +6;
-//                 store_mon_passo(board, ghost_index, rest);
-//             }
-//             else{
-//                 store_mon_moves(board, ghost_index, start, move_index);
-//                 move_index++;
-//             }
-            
-//         }   
-//         start = end + 1; // move to the next line
-//     }
-//     board->ghosts[ghost_index].n_moves = move_index;
-//     return;
-// }

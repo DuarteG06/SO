@@ -48,11 +48,7 @@ int play_board(board_t * game_board) {
             }else{
                 return CONTINUE_PLAY;
             }
-
-            
         }
-
-            
 
         c.turns = 1;
         play = &c;
@@ -87,14 +83,6 @@ int play_board(board_t * game_board) {
     if(result == DEAD_PACMAN) {
         return QUIT_GAME;
     }
-    
-    //vai passar para 
-    // for (int i = 0; i < game_board->n_ghosts; i++) {
-    //     ghost_t* ghost = &game_board->ghosts[i];
-    //     // avoid buffer overflow wrapping around with modulo of n_moves
-    //     // this ensures that we always access a valid move for the ghost
-    //     move_ghost(game_board, i, &ghost->moves[ghost->current_move%ghost->n_moves]);
-    // }
 
     if (!game_board->pacmans[0].alive) {
         return QUIT_GAME;
@@ -120,7 +108,6 @@ void *monster_thread(void *arg){
             
             break;
         }
-
         sleep_ms(board->tempo);
         
     }
@@ -131,7 +118,18 @@ void *monster_thread(void *arg){
 }
 
 
-
+int start_threads(pthread_t *tid, board_t *game_board){
+    for(int i =0; i <game_board->n_ghosts; i++){
+        monster_thread_args *args = malloc(sizeof(monster_thread_args));
+        args->board = game_board;
+        args->ghost_index = i;
+        if (pthread_create(&tid[i], NULL, monster_thread, args) != 0) {
+            fprintf(stderr, "error creating thread.\n");
+            return -1;
+        }
+    }
+    return 0;
+}
 
 
 
@@ -143,17 +141,12 @@ void *monster_thread(void *arg){
 int main(int argc, char** argv) {
     if (argc != 2) {
         printf("Usage: %s <level_directory>\n", argv[0]);
-        // TODO receive inputs
     }
     int count; //number of levels
     char **lvl_files = get_lvl_files(argv[1], &count);
     if(lvl_files ==  NULL){
         return 1;
     }
-    
-    
-
-    //TODO ler ficheiro e tratar dos dados
 
     // Random seed for any random movements
     srand((unsigned int)time(NULL));
@@ -161,7 +154,6 @@ int main(int argc, char** argv) {
     open_debug_file("debug.log");
 
     terminal_init();
-    
     
     int accumulated_points = 0;
     bool end_game = false;
@@ -183,26 +175,14 @@ int main(int argc, char** argv) {
         }
         current_level++;
         
-
-
         load_level(&game_board, accumulated_points, fd, argv[1]);
 
-        
         game_board.threads_live =1;
         
         pthread_t tid[game_board.n_ghosts];
-        for(int i =0; i <game_board.n_ghosts; i++){
-            monster_thread_args *args = malloc(sizeof(monster_thread_args));
-            args->board = &game_board;
-            args->ghost_index = i;
-            if (pthread_create(&tid[i], NULL, monster_thread, args) != 0) {
-                fprintf(stderr, "error creating thread.\n");
-                return -1;
-            }
-
+        if(start_threads(tid, &game_board) ==-1){
+            return -1; //error creating threads
         }
-        
-
         
 
         draw_board(&game_board, DRAW_MENU);
@@ -210,49 +190,32 @@ int main(int argc, char** argv) {
 
         while(true) {
             int result = play_board(&game_board); 
-
             if(result == NEXT_LEVEL) {
+
+                game_board.threads_live =0;
+                for(int i =0; i <game_board.n_ghosts; i++){
+                    pthread_join(tid[i], NULL);
+                }
+
                 if(current_level>=count){
                     end_game = true;
-                    game_board.threads_live =0;
-
-                    //thread wait
-                    for(int i =0; i <game_board.n_ghosts; i++){
-                        pthread_join(tid[i], NULL);
-                    }
-
-                    
-
-                    //pthread_mutex_lock(&game_board.lock);
                     screen_refresh(&game_board, DRAW_WIN);
-                    //pthread_mutex_unlock(&game_board.lock);
-
                     sleep_ms(game_board.tempo);
                     if(game_board.on_save ==1){
                         exit(WON_GAME);
                     }
                     
                 }else{
-                    game_board.threads_live =0;
-                    for(int i =0; i <game_board.n_ghosts; i++){
-                        pthread_join(tid[i], NULL);
-                    }
+                    
                 }
-                // screen_refresh(&game_board, DRAW_WIN);
-                // sleep_ms(game_board.tempo);
                 break;
             }
-
             if(result == QUIT_GAME) {
-                //suposto mostrar o game over ou voltar logo
-                //thread wait
-
+                //wait for threads to finish
                 game_board.threads_live =0;
                 for(int i =0; i <game_board.n_ghosts; i++){
                    pthread_join(tid[i], NULL);
                 }
-                
-
                 
                 if(game_board.on_save ==1){
                     if(game_board.pacmans[0].alive ==1){
@@ -270,25 +233,20 @@ int main(int argc, char** argv) {
                 screen_refresh(&game_board, DRAW_GAME_OVER); 
                 sleep_ms(game_board.tempo);
                 
-
                 end_game = true;
                 break;
             }
 
             if(result == CREATE_BACKUP){
-                //criar fork
+                
                 if(game_board.on_save ==0 ){
-
                     game_board.on_save =1;
 
                     game_board.threads_live =0;
-
-                    //thread wait
                     for(int i =0; i <game_board.n_ghosts; i++){
                         pthread_join(tid[i], NULL);
                     }
-
-
+                    
                     pid_t pid = fork();
                     if (pid < 0) {
                         perror("fork failed");
@@ -312,14 +270,8 @@ int main(int argc, char** argv) {
                             else{
                                 game_board.threads_live =1;
                                 pthread_t tid[game_board.n_ghosts];
-                                for(int i =0; i <game_board.n_ghosts; i++){
-                                    monster_thread_args *args = malloc(sizeof(monster_thread_args));
-                                    args->board = &game_board;
-                                    args->ghost_index = i;
-                                    if (pthread_create(&tid[i], NULL, monster_thread, args) != 0) {
-                                        fprintf(stderr, "error creating thread.\n");
-                                        return -1;
-                                    }
+                                if(start_threads(tid, &game_board) ==-1){
+                                    return -1; //error creating threads
                                 }
                             }
                         }
@@ -329,36 +281,21 @@ int main(int argc, char** argv) {
                     if(pid ==0){
                         game_board.threads_live =1;
                         pthread_t tid[game_board.n_ghosts];
-                        for(int i =0; i <game_board.n_ghosts; i++){
-                            monster_thread_args *args = malloc(sizeof(monster_thread_args));
-                            args->board = &game_board;
-                            args->ghost_index = i;
-                            if (pthread_create(&tid[i], NULL, monster_thread, args) != 0) {
-                                fprintf(stderr, "error creating thread.\n");
-                                return -1;
-                            }
+                        if(start_threads(tid, &game_board) ==-1){
+                            return -1; //error creating threads
                         }
                     }
 
                 }
                 
             }
-            // if(game_board.pacmans[0].alive ==0){
-            //     end_game =1;
-            //     break;
-            // }
-            //pthread_mutex_lock(&game_board.lock);
+            
             screen_refresh(&game_board, DRAW_MENU); 
-            //pthread_mutex_unlock(&game_board.lock);
 
             accumulated_points = game_board.pacmans[0].points;      
         }
-        //pthread_mutex_lock(&game_board.lock);
         print_board(&game_board);
         unload_level(&game_board);
-        //pthread_mutex_unlock(&game_board.lock);
-
-        
     }    
 
     terminal_cleanup();
