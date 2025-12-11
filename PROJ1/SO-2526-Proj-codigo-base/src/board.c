@@ -344,8 +344,13 @@ int load_pacman(board_t* board, int fd, int points) {
     int move_index=0;
     board->pacmans[0].alive =1;
     board->pacmans[0].points = points;
-    while ((end = strchr(start, '\n')) != NULL) {
-        *end = '\0';  
+    while (*start != '\0') {
+
+        end = strchr(start, '\n');
+        if (end != NULL) {
+            *end = '\0';
+        }
+          
         
         if(start[0] != '#'){
             if(strncmp(start, "POS ", 4) ==0){
@@ -361,6 +366,8 @@ int load_pacman(board_t* board, int fd, int points) {
                 move_index++;
             }
         }
+        if (end == NULL)
+            break; 
         start = end + 1; // move to the next line
     }
     board->pacmans[0].n_moves = move_index;
@@ -379,8 +386,13 @@ int load_ghost(board_t* board, int fd, int ghost_index) {
     board->ghosts[ghost_index].charged =0;
 
 
-    while ((end = strchr(start, '\n')) != NULL) {
-        *end = '\0';  
+    while (*start != '\0') {
+
+        end = strchr(start, '\n');
+        if (end != NULL) {
+            *end = '\0';
+        }
+     
         
         if(start[0] != '#'){
             if(strncmp(start, "POS ", 4) ==0){
@@ -397,6 +409,8 @@ int load_ghost(board_t* board, int fd, int ghost_index) {
             }
             
         }   
+        if (end == NULL)
+            break; 
         start = end + 1; // move to the next line
     }
     board->ghosts[ghost_index].n_moves = move_index;

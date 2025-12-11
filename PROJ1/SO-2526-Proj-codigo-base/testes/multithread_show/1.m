@@ -1,0 +1,19 @@
+# Vai matar o pacman
+PASSO 1
+POS 1 1
+D
+D
+D
+D
+S
+S
+S
+S
+A
+A
+A
+A
+W
+W
+W
+W

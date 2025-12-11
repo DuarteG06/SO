@@ -11,7 +11,7 @@ MON 1.m
 # o ficheiro termina com o conteúdo da matriz de jogo em que "X"
 # representa uma parede, "o" representa um espaço de circulação
 # e “@” representa o portal
-XXoXXX
+XXXXXX
 XoooXX
 XoXoXX
 Xooo@X
