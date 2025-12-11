@@ -69,7 +69,10 @@ int play_board(board_t * game_board) {
         return QUIT_GAME;
     }
     else if(play->command == 'G'){
-        pacman->current_move++;
+        if(pacman->n_moves != 0){
+            pacman->current_move++;
+        }
+        
         return CREATE_BACKUP;
     }
 

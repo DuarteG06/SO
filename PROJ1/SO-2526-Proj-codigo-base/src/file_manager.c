@@ -65,6 +65,18 @@ void free_lvl_files(char **lvl_files, int n){
     free(lvl_files);
 }
 
+int lvl_comparator(const void *a, const void *b) {
+    char *fa = *(char **)a;
+    char *fb = *(char **)b;
+
+    // extract numbers
+    int na = atoi(fa);
+    int nb = atoi(fb);
+
+    return (na - nb);
+}
+
+
 char **get_lvl_files(char *inputdir, int *count){
     DIR *dir = opendir(inputdir);
     if (dir == NULL) {
@@ -104,6 +116,7 @@ char **get_lvl_files(char *inputdir, int *count){
     }
     closedir(dir);
     *count = n;
+    qsort(files, n, sizeof(char *), lvl_comparator);
     return files;
 }
 

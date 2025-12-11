@@ -12,6 +12,9 @@ int is_lvl_file(char *file);
 //frees the level files
 void free_lvl_files(char **lvl_files, int n);
 
+//used to sort the level files read
+int lvl_comparator(const void *a, const void *b);
+
 //returns an array of all level files in a directory
 char **get_lvl_files(char *inputdir, int *count);
 
