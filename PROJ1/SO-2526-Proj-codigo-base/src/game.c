@@ -142,7 +142,7 @@ int main(int argc, char** argv) {
         printf("Usage: %s <level_directory>\n", argv[0]);
         // TODO receive inputs
     }
-    int count;
+    int count; //number of levels
     char **lvl_files = get_lvl_files(argv[1], &count);
     if(lvl_files ==  NULL){
         return 1;
@@ -349,7 +349,7 @@ int main(int argc, char** argv) {
 
     close_debug_file();
 
-
-    free(lvl_files);
+    free_lvl_files(lvl_files, count);
+   
     return 0;
 }
