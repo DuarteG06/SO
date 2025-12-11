@@ -42,8 +42,17 @@ int play_board(board_t * game_board) {
         
         c.command = get_input();
 
-        if(c.command == '\0')
-            return CONTINUE_PLAY;
+        if(c.command == '\0'){
+            if(game_board->pacmans[0].alive ==0){
+                return QUIT_GAME;
+            }else{
+                return CONTINUE_PLAY;
+            }
+
+            
+        }
+
+            
 
         c.turns = 1;
         play = &c;
@@ -99,18 +108,14 @@ void *monster_thread(void *arg){
     ghost_t* ghost = &board->ghosts[ghost_index];
     while(board->threads_live == 1){
 
-
-
-         //ver o screenrefresh
         pthread_mutex_lock(&board->lock);
         move_ghost(board, ghost_index, &ghost->moves[ghost->current_move%ghost->n_moves]);
-        screen_refresh(board, DRAW_MENU); 
-
         pthread_mutex_unlock(&board->lock);
         if (!board->pacmans[0].alive) {
             board->threads_live =0;
+            
             break;
-        } 
+        }
 
         sleep_ms(board->tempo);
         
@@ -164,7 +169,6 @@ int main(int argc, char** argv) {
         char path[128];
         snprintf(path, sizeof(path), "%s/%s", argv[1], lvl_files[current_level]);
 
-        //strcpy(lvl_files[i], game_board.level_name);
         //loads the level name
         snprintf(game_board.level_name, sizeof(game_board.level_name), "%s", lvl_files[current_level]);
 
@@ -176,11 +180,9 @@ int main(int argc, char** argv) {
         current_level++;
         
 
-        //read_lvl_file(fd, &game_board, argv[1], accumulated_points);
 
-        pthread_mutex_lock(&game_board.lock); //os threads vao tar mortos neste ponto
         load_level(&game_board, accumulated_points, fd, argv[1]);
-        pthread_mutex_unlock(&game_board.lock);
+
         
         game_board.threads_live =1;
         
@@ -199,10 +201,8 @@ int main(int argc, char** argv) {
 
         
 
-        pthread_mutex_lock(&game_board.lock);
         draw_board(&game_board, DRAW_MENU);
         refresh_screen();
-        pthread_mutex_unlock(&game_board.lock);
 
         while(true) {
             int result = play_board(&game_board); 
@@ -212,12 +212,16 @@ int main(int argc, char** argv) {
                     end_game = true;
                     game_board.threads_live =0;
 
-
                     //thread wait
+                    for(int i =0; i <game_board.n_ghosts; i++){
+                        pthread_join(tid[i], NULL);
+                    }
 
-                    pthread_mutex_lock(&game_board.lock);
+                    
+
+                    //pthread_mutex_lock(&game_board.lock);
                     screen_refresh(&game_board, DRAW_WIN);
-                    pthread_mutex_unlock(&game_board.lock);
+                    //pthread_mutex_unlock(&game_board.lock);
 
                     sleep_ms(game_board.tempo);
                     if(game_board.on_save ==1){
@@ -226,6 +230,9 @@ int main(int argc, char** argv) {
                     
                 }else{
                     game_board.threads_live =0;
+                    for(int i =0; i <game_board.n_ghosts; i++){
+                        pthread_join(tid[i], NULL);
+                    }
                 }
                 // screen_refresh(&game_board, DRAW_WIN);
                 // sleep_ms(game_board.tempo);
@@ -234,23 +241,20 @@ int main(int argc, char** argv) {
 
             if(result == QUIT_GAME) {
                 //suposto mostrar o game over ou voltar logo
-
-                game_board.threads_live =0;
-
                 //thread wait
 
+                game_board.threads_live =0;
+                for(int i =0; i <game_board.n_ghosts; i++){
+                   pthread_join(tid[i], NULL);
+                }
+
+                
                 if(game_board.on_save ==1){
-
-
-                    
-
 
                     exit(0);
                 }
 
-                pthread_mutex_lock(&game_board.lock);
                 screen_refresh(&game_board, DRAW_GAME_OVER); 
-                pthread_mutex_unlock(&game_board.lock);
                 sleep_ms(game_board.tempo);
                 
 
@@ -261,12 +265,15 @@ int main(int argc, char** argv) {
             if(result == CREATE_BACKUP){
                 //criar fork
                 if(game_board.on_save ==0 ){
+
                     game_board.on_save =1;
 
                     game_board.threads_live =0;
 
                     //thread wait
-
+                    for(int i =0; i <game_board.n_ghosts; i++){
+                        pthread_join(tid[i], NULL);
+                    }
 
 
                     pid_t pid = fork();
@@ -285,28 +292,54 @@ int main(int argc, char** argv) {
                             if(WEXITSTATUS(status)==WON_GAME){
                                 end_game = true;
                                 break;
+                            }else{
+                                game_board.threads_live =1;
+                                pthread_t tid[game_board.n_ghosts];
+                                for(int i =0; i <game_board.n_ghosts; i++){
+                                    monster_thread_args *args = malloc(sizeof(monster_thread_args));
+                                    args->board = &game_board;
+                                    args->ghost_index = i;
+                                    if (pthread_create(&tid[i], NULL, monster_thread, args) != 0) {
+                                        fprintf(stderr, "error creating thread.\n");
+                                        return -1;
+                                    }
+                                }
                             }
                         }
                         game_board.on_save =0;
+                        
+                    }
+                    if(pid ==0){
+                        game_board.threads_live =1;
+                        pthread_t tid[game_board.n_ghosts];
+                        for(int i =0; i <game_board.n_ghosts; i++){
+                            monster_thread_args *args = malloc(sizeof(monster_thread_args));
+                            args->board = &game_board;
+                            args->ghost_index = i;
+                            if (pthread_create(&tid[i], NULL, monster_thread, args) != 0) {
+                                fprintf(stderr, "error creating thread.\n");
+                                return -1;
+                            }
+                        }
                     }
 
                 }
                 
             }
-            if(game_board.pacmans[0].alive ==0){
-                end_game =1;
-                break;
-            }
-            pthread_mutex_lock(&game_board.lock);
+            // if(game_board.pacmans[0].alive ==0){
+            //     end_game =1;
+            //     break;
+            // }
+            //pthread_mutex_lock(&game_board.lock);
             screen_refresh(&game_board, DRAW_MENU); 
-            pthread_mutex_unlock(&game_board.lock);
+            //pthread_mutex_unlock(&game_board.lock);
 
             accumulated_points = game_board.pacmans[0].points;      
         }
-        pthread_mutex_lock(&game_board.lock);
+        //pthread_mutex_lock(&game_board.lock);
         print_board(&game_board);
         unload_level(&game_board);
-        pthread_mutex_unlock(&game_board.lock);
+        //pthread_mutex_unlock(&game_board.lock);
 
         
     }    
