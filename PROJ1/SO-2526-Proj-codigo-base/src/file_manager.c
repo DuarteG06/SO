@@ -138,6 +138,7 @@ void prepare_and_read_pac_file(board_t *board, char *line, int points, char *dir
         return;
     }
     load_pacman(board, fd, points);
+    close(fd);
 }
 
 void set_memory_for_ghosts(board_t *board, char *mon_files){
@@ -166,6 +167,7 @@ void prepare_and_read_mon_file(board_t *board, char *mon_files, char *dirpath){
         }
         load_ghost(board, fd, ghost_index);
         mon_file = strtok(NULL, " ");
+        close(fd);
         ghost_index++;
     }
 }

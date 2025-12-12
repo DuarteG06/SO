@@ -176,6 +176,7 @@ int main(int argc, char** argv) {
         current_level++;
         
         load_level(&game_board, accumulated_points, fd, argv[1]);
+        close(fd);
 
         game_board.threads_live =1;
         
